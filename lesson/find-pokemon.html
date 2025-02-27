@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>find pokemon</title>
+    <style>
+      .pokemon-card {
+        height: 100px;
+        width: 500px;
+        border: 1px solid black;
+        display: flex;
+        flex-direction: row;
+        padding: 6px;
+      }
+
+      .pokemon-card img {
+        height: 66px;
+        width: 66px;
+        border-radius: 50%;
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="output">
+      <button onclick="getPokemon(undefined)">add pokemon</button>
+      <!-- <input id="searchPokemon" /><button></button> -->
+      <!-- <audio controls>
+        <source
+          src="https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/151.ogg"
+          type="audio/ogg"
+        />
+      </audio>
+      <audio controls>
+        <source
+          src="https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/legacy/151.ogg"
+          type="audio/ogg"
+        />
+      </audio> -->
+    </div>
+    <script>
+      function log(...params) {
+        console.log("/lesson/find-pokemon.html: ", ...params);
+      }
+
+      /**
+       * @param {String} pokemonName - name of pokemon as string to be passed
+       * */
+      async function getPokemon(pokemonName) {
+        try {
+          // 1. checking if pokemonName parameter is valid
+          if (typeof pokemonName !== "string" || !pokemonName)
+            throw new Error("parameter invalid...");
+          // 2. making request to pokeapi with pokemonName parameter
+          const response = await fetch(
+            `https://pokeapi.co/api/v2/pokemon/${pokemonName}`
+          );
+
+          // 3. checking if repsonse if ok is false
+          // falsy value -> undefined, null, false, 0
+          if (!response.ok) throw new Error(response.status);
+          // 4. using .json() method from response object ( that was created from await fetch)
+          const pokemon = await response.json();
+          log("pokemon =", pokemon);
+
+          // 5. need to extract from data -> pokemon name, height, weight, image, type(array), list cries -> as buttons
+          const name = pokemon.name;
+          log("name =", name);
+          const height = pokemon.height;
+          const weight = pokemon.weight;
+          const image = pokemon.sprites.front_default;
+          // let types = []
+          // for (let i = 0; i < pokemon.types.length; i++) {
+          //   types.push(pokemon.types[i].type.name)
+          // }
+          const types = pokemon.types.map((el) => el.type.name);
+          const sounds = Object.entries(pokemon.cries).map(([key, val]) => {
+            return {
+              soundType: key,
+              sound: val,
+            };
+          });
+
+          const pokemonObj = {
+            name,
+            height,
+            weight,
+            image,
+            types,
+            sounds,
+          };
+
+          log("pokemonObj =", pokemonObj);
+
+          // 6. document.createElement('div') and then construct card -> add class and do css
+          const card = document.createElement("div");
+          card.classList.add("pokemon-card");
+
+          // 7. document.crateELement("img") put image source in there and add css for rounded
+          const img = document.createElement("img");
+          img.src = image;
+
+          card.appendChild(img);
+
+          // 8. document.createElement("p") set textContent -> "weight lbs / height ft"
+          const p = document.createElement("p");
+          p.style.marginLeft = "5px";
+          p.style.fontSize = "12px";
+          p.innerHTML = `${name}<br>${
+            height * 0.1
+          } m / ${weight} oz<br>${types.join(", ")}`;
+          card.appendChild(p);
+          const soundContainer = document.createElement("div");
+          // 9. add audio button
+          for (let i = 0; i < sounds.length; i++) {
+            const audio = document.createElement("audio");
+            audio.controls = true;
+            const source = document.createElement("source");
+
+            // audio.style.display = "none";
+            // document.body.appendChild(audio);
+
+            const button = document.createElement("button");
+            button.textContent = sounds[i].soundType;
+            button.addEventListener("click", function () {
+              const snd = new Audio(sounds[i].sound);
+              snd.play();
+
+              // source.src = sounds[i].sound;
+              // console.log(source);
+              // audio.play();
+            });
+            soundContainer.style.alignSelf = "flex-end";
+
+            soundContainer.appendChild(button);
+          }
+
+          card.appendChild(soundContainer);
+
+          // 10. append card to output
+          output.appendChild(card);
+
+          // logging error
+        } catch (error) {
+          // turning error object into string
+          const errorString = error.toString();
+          log("errorString =", errorString);
+          if (errorString === "Error: parameter invalid...") {
+            const newPokemon = await prompt("enter new pokemon");
+            getPokemon(newPokemon);
+          }
+
+          if (errorString === "Error: 404") {
+            const newPokemon = await prompt("check spelling...");
+            getPokemon(newPokemon);
+          }
+        }
+      }
+
+      // getPokemon(undefined);
+      getPokemon(undefined);
+    </script>
+  </body>
+</html>

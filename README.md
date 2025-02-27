@@ -36,10 +36,9 @@ JavaScript provides `fetch()` to make HTTP requests.
 ```javascript
 async function getPokemon(name) {
   try {
-    let response = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
     if (!response.ok) throw new Error("Pokémon not found");
-
-    let data = await response.json();
+    const data = await response.json();
     console.log(data);
   } catch (error) {
     console.error(error.message);
