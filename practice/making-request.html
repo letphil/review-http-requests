@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .loader {
+        width: 10px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        border: 1px solid;
+        border-color: #000 #0000;
+        animation: l1 1s infinite;
+        text-align: center;
+        margin-right: 4px;
+      }
+      @keyframes l1 {
+        to {
+          transform: rotate(0.5turn);
+        }
+      }
+
+      #mainContainer {
+        display: flex;
+        flex-flow: row wrap;
+      }
+
+      table,
+      th,
+      td {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- <pre id="httpResponse"></pre> -->
+    <div id="mainContainer"></div>
+    <dialog id="detailsModal">
+      <div id="detailsModalContent"></div>
+      <button autofocus>close</button>
+    </dialog>
+
+    <script>
+      // detailsModal.showModal()
+      // detailsModal.close()
+
+      document.querySelector("#detailsModal button[autofocus]").onclick =
+        function () {
+          detailsModalContent.innerHTML = "";
+          detailsModal.close();
+        };
+
+      const pokeApi = "https://pokeapi.co/api/v2/pokemon";
+      const exerciseApi = "https://exercisedb-api.vercel.app/api/v1/exercises";
+
+      async function makeRequest(url, method = "GET") {
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const toJson = await res.json();
+        return toJson;
+      }
+
+      function loadingSpinner() {
+        const div = document.createElement("div");
+        div.classList.add("loader");
+        return div;
+      }
+
+      function pokemonUI(pokemonName, pokemonImg, pokemonMoves) {
+        const img = document.createElement("img");
+        img.src = pokemonImg;
+        img.alt = `${pokemonName}-back-sprite`;
+
+        console.log("pokemonMoves =", pokemonMoves);
+        const table = document.createElement("table");
+        const tr1 = document.createElement("tr");
+        const tr2 = document.createElement("tr");
+        for (let i = 0; i < pokemonMoves.length; i++) {
+          const td = document.createElement("td");
+          td.textContent = pokemonMoves[i].move.name;
+          if (i < 2) {
+            tr1.appendChild(td);
+          } else {
+            tr2.appendChild(td);
+          }
+        }
+
+        table.appendChild(tr1);
+        table.appendChild(tr2);
+
+        detailsModalContent.appendChild(img);
+        detailsModalContent.appendChild(table);
+      }
+
+      // [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+      function getRandomMoves(moves, targetLength = 4, selected = []) {
+        if (selected.length === targetLength) {
+          return selected;
+        }
+        const idx = Math.floor(Math.random() * moves.length);
+        const [move] = moves.splice(idx, 1);
+        selected.push(move);
+        return getRandomMoves(moves, targetLength, selected);
+      }
+
+      function listPokemonItem(pokemonName, link) {
+        const button = document.createElement("button");
+        // button.style.margin = 2
+        button.style.display = "flex";
+        button.textContent = pokemonName;
+        const spinner = loadingSpinner();
+        button.onclick = async function () {
+          try {
+            button.prepend(spinner);
+            const res = await makeRequest(link);
+            console.log("res =", res);
+            // var audio = new Audio('audio_file.mp3');
+            // audio.play();
+            // name, 4 random moves Math.random on the length move
+            // image ( sprites.back_default)
+            // sound ( cries.latest)
+            const name = res.name;
+            const img = res.sprites.back_default;
+            const sound = res.cries.latest;
+            const moves = getRandomMoves(res.moves);
+
+            pokemonUI(name, img, moves);
+
+            // detailsModalContent.textContent = JSON.stringify(res, null, 2);
+            const audio = new Audio(sound);
+            detailsModal.showModal();
+            audio.play();
+          } catch (error) {
+            console.error("error =", error);
+          } finally {
+            spinner.remove();
+          }
+          // window.location(link)
+          //
+        };
+        return button;
+      }
+
+      function fetchMoreButton(nextPage) {
+        const btn = document.createElement("button");
+        btn.textContent = "+";
+        btn.addEventListener("click", async function () {
+          btn.innerHTML = "<div class='loader'></div>";
+          await displayList(nextPage);
+          this.remove();
+        });
+        return btn;
+      }
+
+      async function displayList(endpoint) {
+        const res = await makeRequest(endpoint);
+
+        // console.log("res =", res);
+        // httpResponse.textContent = JSON.stringify(res, null, 2);
+        const results = res.results;
+        const next = res.next;
+
+        results.forEach((element) => {
+          const current = listPokemonItem(element.name, element.url);
+          mainContainer.appendChild(current);
+        });
+        mainContainer.appendChild(fetchMoreButton(next));
+      }
+
+      displayList(pokeApi);
+
+      // async function makeCallToExercise() {
+      //   const res = await makeRequest(exerciseApi);
+      //   console.log("res =", res);
+      // }
+      // makeCallToExercise
+    </script>
+  </body>
+</html>
